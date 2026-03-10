@@ -2,22 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>FPS Treino de Mira</title>
+<title>FPS</title>
 
 <style>
 body{
 margin:0;
 overflow:hidden;
 background:black;
-font-family:Arial;
-}
-
-#hud{
-position:absolute;
-top:20px;
-left:20px;
-color:white;
-font-size:22px;
 }
 
 #crosshair{
@@ -27,28 +18,26 @@ left:50%;
 transform:translate(-50%,-50%);
 color:white;
 font-size:30px;
+font-family:Arial;
 }
 
-#start{
+#score{
 position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
+top:20px;
+left:20px;
 color:white;
-font-size:30px;
-cursor:pointer;
+font-size:24px;
+font-family:Arial;
 }
 </style>
 </head>
 
 <body>
 
-<div id="hud">Score: 0</div>
 <div id="crosshair">+</div>
-<div id="start">Clique para jogar</div>
+<div id="score">Score: 0</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
 
@@ -65,16 +54,8 @@ let renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-let controls = new THREE.PointerLockControls(camera,document.body)
+camera.position.set(0,1.6,5)
 
-document.getElementById("start").onclick=()=>{
-controls.lock()
-document.getElementById("start").style.display="none"
-}
-
-scene.add(controls.getObject())
-
-camera.position.y = 1.6
 
 // chão
 let floorGeo = new THREE.PlaneGeometry(200,200)
@@ -84,45 +65,71 @@ let floor = new THREE.Mesh(floorGeo,floorMat)
 floor.rotation.x = -Math.PI/2
 scene.add(floor)
 
+
 // alvos
 let targets=[]
 let score=0
 
 function spawnTarget(){
 
-let g = new THREE.SphereGeometry(0.5)
-let m = new THREE.MeshBasicMaterial({color:0xff0000})
-let target = new THREE.Mesh(g,m)
+let g=new THREE.BoxGeometry()
+let m=new THREE.MeshBasicMaterial({color:0xff0000})
+let cube=new THREE.Mesh(g,m)
 
-target.position.x=(Math.random()-0.5)*20
-target.position.y=1+Math.random()*3
-target.position.z=(Math.random()-0.5)*20
+cube.position.x=(Math.random()-0.5)*20
+cube.position.y=1+Math.random()*3
+cube.position.z=(Math.random()-0.5)*20
 
-scene.add(target)
-targets.push(target)
+scene.add(cube)
+targets.push(cube)
 
 }
 
-for(let i=0;i<8;i++) spawnTarget()
+for(let i=0;i<10;i++) spawnTarget()
+
+
+// controle mouse
+let yaw=0
+let pitch=0
+
+document.body.addEventListener("click",()=>{
+document.body.requestPointerLock()
+})
+
+document.addEventListener("mousemove",(e)=>{
+
+if(document.pointerLockElement===document.body){
+
+yaw -= e.movementX*0.002
+pitch -= e.movementY*0.002
+
+pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch))
+
+camera.rotation.set(pitch,yaw,0)
+
+}
+
+})
+
 
 // tiro
-let raycaster = new THREE.Raycaster()
+let raycaster=new THREE.Raycaster()
 
-window.addEventListener("click",()=>{
+document.addEventListener("mousedown",()=>{
 
 raycaster.setFromCamera({x:0,y:0},camera)
 
-let hits = raycaster.intersectObjects(targets)
+let hits=raycaster.intersectObjects(targets)
 
 if(hits.length>0){
 
-let hit = hits[0].object
+let hit=hits[0].object
 scene.remove(hit)
 
 targets.splice(targets.indexOf(hit),1)
 
 score++
-document.getElementById("hud").innerText="Score: "+score
+document.getElementById("score").innerText="Score: "+score
 
 spawnTarget()
 
@@ -130,16 +137,17 @@ spawnTarget()
 
 })
 
+
 // movimento
 let forward=false
-let backward=false
+let back=false
 let left=false
 let right=false
 
 document.addEventListener("keydown",(e)=>{
 
 if(e.code==="KeyW") forward=true
-if(e.code==="KeyS") backward=true
+if(e.code==="KeyS") back=true
 if(e.code==="KeyA") left=true
 if(e.code==="KeyD") right=true
 
@@ -148,11 +156,12 @@ if(e.code==="KeyD") right=true
 document.addEventListener("keyup",(e)=>{
 
 if(e.code==="KeyW") forward=false
-if(e.code==="KeyS") backward=false
+if(e.code==="KeyS") back=false
 if(e.code==="KeyA") left=false
 if(e.code==="KeyD") right=false
 
 })
+
 
 function animate(){
 
@@ -160,10 +169,10 @@ requestAnimationFrame(animate)
 
 let speed=0.1
 
-if(forward) controls.moveForward(speed)
-if(backward) controls.moveForward(-speed)
-if(left) controls.moveRight(-speed)
-if(right) controls.moveRight(speed)
+if(forward) camera.translateZ(-speed)
+if(back) camera.translateZ(speed)
+if(left) camera.translateX(-speed)
+if(right) camera.translateX(speed)
 
 renderer.render(scene,camera)
 
@@ -172,6 +181,5 @@ renderer.render(scene,camera)
 animate()
 
 </script>
-
 </body>
 </html>
