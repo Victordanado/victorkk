@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Jogo de Tiro 3D</title>
 
+<style>
+body{
+margin:0;
+overflow:hidden;
+background:black;
+font-family:Arial;
+}
+
+#score{
+position:absolute;
+top:20px;
+left:20px;
+color:white;
+font-size:24px;
+}
+
+#crosshair{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+color:white;
+font-size:30px;
+}
+</style>
+
+</head>
+<body>
+
+<div id="score">Score: 0</div>
+<div id="crosshair">+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+
+<script>
+
+let scene = new THREE.Scene()
+
+let camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+)
+
+let renderer = new THREE.WebGLRenderer()
+renderer.setSize(window.innerWidth,window.innerHeight)
+document.body.appendChild(renderer.domElement)
+
+camera.position.z = 5
+
+let targets = []
+let score = 0
+
+function spawnTarget(){
+
+let geometry = new THREE.BoxGeometry()
+let material = new THREE.MeshBasicMaterial({color:0xff0000})
+let cube = new THREE.Mesh(geometry,material)
+
+cube.position.x = (Math.random()-0.5)*10
+cube.position.y = (Math.random()-0.5)*6
+cube.position.z = -10 - Math.random()*10
+
+scene.add(cube)
+targets.push(cube)
+
+}
+
+for(let i=0;i<5;i++){
+spawnTarget()
+}
+
+let raycaster = new THREE.Raycaster()
+let mouse = new THREE.Vector2()
+
+window.addEventListener("click",()=>{
+
+raycaster.setFromCamera({x:0,y:0},camera)
+
+let intersects = raycaster.intersectObjects(targets)
+
+if(intersects.length>0){
+
+let hit = intersects[0].object
+scene.remove(hit)
+targets.splice(targets.indexOf(hit),1)
+
+score++
+document.getElementById("score").innerText="Score: "+score
+
+spawnTarget()
+
+}
+
+})
+
+function animate(){
+
+requestAnimationFrame(animate)
+
+targets.forEach(t=>{
+t.rotation.x +=0.01
+t.rotation.y +=0.01
+})
+
+renderer.render(scene,camera)
+
+}
+
+animate()
+
+</script>
+
+</body>
+</html>
