@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>FPS 3D</title>
+<title>FPS Treino de Mira</title>
 
 <style>
 body{
@@ -12,12 +12,12 @@ background:black;
 font-family:Arial;
 }
 
-#score{
+#hud{
 position:absolute;
 top:20px;
 left:20px;
 color:white;
-font-size:24px;
+font-size:22px;
 }
 
 #crosshair{
@@ -43,9 +43,9 @@ cursor:pointer;
 
 <body>
 
-<div id="score">Score: 0</div>
+<div id="hud">Score: 0</div>
 <div id="crosshair">+</div>
-<div id="start">Clique para começar</div>
+<div id="start">Clique para jogar</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/PointerLockControls.js"></script>
@@ -74,6 +74,9 @@ document.getElementById("start").style.display="none"
 
 scene.add(controls.getObject())
 
+camera.position.y = 1.6
+
+// chão
 let floorGeo = new THREE.PlaneGeometry(200,200)
 let floorMat = new THREE.MeshBasicMaterial({color:0x333333})
 let floor = new THREE.Mesh(floorGeo,floorMat)
@@ -81,43 +84,45 @@ let floor = new THREE.Mesh(floorGeo,floorMat)
 floor.rotation.x = -Math.PI/2
 scene.add(floor)
 
+// alvos
 let targets=[]
 let score=0
 
 function spawnTarget(){
 
-let g=new THREE.BoxGeometry()
-let m=new THREE.MeshBasicMaterial({color:0xff0000})
-let cube=new THREE.Mesh(g,m)
+let g = new THREE.SphereGeometry(0.5)
+let m = new THREE.MeshBasicMaterial({color:0xff0000})
+let target = new THREE.Mesh(g,m)
 
-cube.position.x=(Math.random()-0.5)*20
-cube.position.y=1
-cube.position.z=(Math.random()-0.5)*20
+target.position.x=(Math.random()-0.5)*20
+target.position.y=1+Math.random()*3
+target.position.z=(Math.random()-0.5)*20
 
-scene.add(cube)
-targets.push(cube)
+scene.add(target)
+targets.push(target)
 
 }
 
-for(let i=0;i<10;i++) spawnTarget()
+for(let i=0;i<8;i++) spawnTarget()
 
+// tiro
 let raycaster = new THREE.Raycaster()
 
 window.addEventListener("click",()=>{
 
 raycaster.setFromCamera({x:0,y:0},camera)
 
-let hits=raycaster.intersectObjects(targets)
+let hits = raycaster.intersectObjects(targets)
 
 if(hits.length>0){
 
-let hit=hits[0].object
+let hit = hits[0].object
 scene.remove(hit)
 
 targets.splice(targets.indexOf(hit),1)
 
 score++
-document.getElementById("score").innerText="Score: "+score
+document.getElementById("hud").innerText="Score: "+score
 
 spawnTarget()
 
@@ -125,26 +130,27 @@ spawnTarget()
 
 })
 
-let moveForward=false
-let moveBackward=false
-let moveLeft=false
-let moveRight=false
+// movimento
+let forward=false
+let backward=false
+let left=false
+let right=false
 
 document.addEventListener("keydown",(e)=>{
 
-if(e.code=="KeyW") moveForward=true
-if(e.code=="KeyS") moveBackward=true
-if(e.code=="KeyA") moveLeft=true
-if(e.code=="KeyD") moveRight=true
+if(e.code==="KeyW") forward=true
+if(e.code==="KeyS") backward=true
+if(e.code==="KeyA") left=true
+if(e.code==="KeyD") right=true
 
 })
 
 document.addEventListener("keyup",(e)=>{
 
-if(e.code=="KeyW") moveForward=false
-if(e.code=="KeyS") moveBackward=false
-if(e.code=="KeyA") moveLeft=false
-if(e.code=="KeyD") moveRight=false
+if(e.code==="KeyW") forward=false
+if(e.code==="KeyS") backward=false
+if(e.code==="KeyA") left=false
+if(e.code==="KeyD") right=false
 
 })
 
@@ -154,10 +160,10 @@ requestAnimationFrame(animate)
 
 let speed=0.1
 
-if(moveForward) controls.moveForward(speed)
-if(moveBackward) controls.moveForward(-speed)
-if(moveLeft) controls.moveRight(-speed)
-if(moveRight) controls.moveRight(speed)
+if(forward) controls.moveForward(speed)
+if(backward) controls.moveForward(-speed)
+if(left) controls.moveRight(-speed)
+if(right) controls.moveRight(speed)
 
 renderer.render(scene,camera)
 
@@ -165,6 +171,7 @@ renderer.render(scene,camera)
 
 animate()
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/PointerLockControls.js"></script>
+</script>
+
 </body>
 </html>
