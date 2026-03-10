@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Jogo de Tiro 3D</title>
+<title>FPS 3D</title>
 
 <style>
 body{
@@ -28,15 +28,27 @@ transform:translate(-50%,-50%);
 color:white;
 font-size:30px;
 }
-</style>
 
+#start{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+color:white;
+font-size:30px;
+cursor:pointer;
+}
+</style>
 </head>
+
 <body>
 
 <div id="score">Score: 0</div>
 <div id="crosshair">+</div>
+<div id="start">Clique para começar</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
 
@@ -53,43 +65,55 @@ let renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-camera.position.z = 5
+let controls = new THREE.PointerLockControls(camera,document.body)
 
-let targets = []
-let score = 0
+document.getElementById("start").onclick=()=>{
+controls.lock()
+document.getElementById("start").style.display="none"
+}
+
+scene.add(controls.getObject())
+
+let floorGeo = new THREE.PlaneGeometry(200,200)
+let floorMat = new THREE.MeshBasicMaterial({color:0x333333})
+let floor = new THREE.Mesh(floorGeo,floorMat)
+
+floor.rotation.x = -Math.PI/2
+scene.add(floor)
+
+let targets=[]
+let score=0
 
 function spawnTarget(){
 
-let geometry = new THREE.BoxGeometry()
-let material = new THREE.MeshBasicMaterial({color:0xff0000})
-let cube = new THREE.Mesh(geometry,material)
+let g=new THREE.BoxGeometry()
+let m=new THREE.MeshBasicMaterial({color:0xff0000})
+let cube=new THREE.Mesh(g,m)
 
-cube.position.x = (Math.random()-0.5)*10
-cube.position.y = (Math.random()-0.5)*6
-cube.position.z = -10 - Math.random()*10
+cube.position.x=(Math.random()-0.5)*20
+cube.position.y=1
+cube.position.z=(Math.random()-0.5)*20
 
 scene.add(cube)
 targets.push(cube)
 
 }
 
-for(let i=0;i<5;i++){
-spawnTarget()
-}
+for(let i=0;i<10;i++) spawnTarget()
 
 let raycaster = new THREE.Raycaster()
-let mouse = new THREE.Vector2()
 
 window.addEventListener("click",()=>{
 
 raycaster.setFromCamera({x:0,y:0},camera)
 
-let intersects = raycaster.intersectObjects(targets)
+let hits=raycaster.intersectObjects(targets)
 
-if(intersects.length>0){
+if(hits.length>0){
 
-let hit = intersects[0].object
+let hit=hits[0].object
 scene.remove(hit)
+
 targets.splice(targets.indexOf(hit),1)
 
 score++
@@ -101,14 +125,39 @@ spawnTarget()
 
 })
 
+let moveForward=false
+let moveBackward=false
+let moveLeft=false
+let moveRight=false
+
+document.addEventListener("keydown",(e)=>{
+
+if(e.code=="KeyW") moveForward=true
+if(e.code=="KeyS") moveBackward=true
+if(e.code=="KeyA") moveLeft=true
+if(e.code=="KeyD") moveRight=true
+
+})
+
+document.addEventListener("keyup",(e)=>{
+
+if(e.code=="KeyW") moveForward=false
+if(e.code=="KeyS") moveBackward=false
+if(e.code=="KeyA") moveLeft=false
+if(e.code=="KeyD") moveRight=false
+
+})
+
 function animate(){
 
 requestAnimationFrame(animate)
 
-targets.forEach(t=>{
-t.rotation.x +=0.01
-t.rotation.y +=0.01
-})
+let speed=0.1
+
+if(moveForward) controls.moveForward(speed)
+if(moveBackward) controls.moveForward(-speed)
+if(moveLeft) controls.moveRight(-speed)
+if(moveRight) controls.moveRight(speed)
 
 renderer.render(scene,camera)
 
@@ -117,6 +166,5 @@ renderer.render(scene,camera)
 animate()
 
 </script>
-
 </body>
 </html>
