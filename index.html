@@ -1,185 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
-<meta charset="UTF-8">
-<title>FPS</title>
-
-<style>
-body{
-margin:0;
-overflow:hidden;
-background:black;
-}
-
-#crosshair{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-color:white;
-font-size:30px;
-font-family:Arial;
-}
-
-#score{
-position:absolute;
-top:20px;
-left:20px;
-color:white;
-font-size:24px;
-font-family:Arial;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Treino de Mira 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
 </head>
-
 <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, target, raycaster, mouse, intersects;
 
-<div id="crosshair">+</div>
-<div id="score">Score: 0</div>
+        function init() {
+            // Criar a cena
+            scene = new THREE.Scene();
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+            // Criar a câmera (campo de visão, aspecto, plano de corte)
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-<script>
+            // Criar o renderizador e adicionar à página
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-let scene = new THREE.Scene()
+            // Criar uma esfera para o alvo
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            target = new THREE.Mesh(geometry, material);
+            target.position.set(0, 0, -5);  // Coloca o alvo à frente da câmera
+            scene.add(target);
 
-let camera = new THREE.PerspectiveCamera(
-75,
-window.innerWidth/window.innerHeight,
-0.1,
-1000
-)
+            // Criar o raycaster e o vetor de mouse
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
 
-let renderer = new THREE.WebGLRenderer()
-renderer.setSize(window.innerWidth,window.innerHeight)
-document.body.appendChild(renderer.domElement)
+            // Adicionar evento de movimento do mouse
+            window.addEventListener('mousemove', onMouseMove, false);
 
-camera.position.set(0,1.6,5)
+            // Ajustar a cena quando a janela for redimensionada
+            window.addEventListener('resize', onWindowResize, false);
 
+            // Definir a posição inicial da câmera
+            camera.position.z = 10;
 
-// chão
-let floorGeo = new THREE.PlaneGeometry(200,200)
-let floorMat = new THREE.MeshBasicMaterial({color:0x333333})
-let floor = new THREE.Mesh(floorGeo,floorMat)
+            // Iniciar animação
+            animate();
+        }
 
-floor.rotation.x = -Math.PI/2
-scene.add(floor)
+        function onMouseMove(event) {
+            // Atualiza as coordenadas do mouse com base na posição da tela
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
 
+        function onWindowResize() {
+            // Atualiza a proporção da câmera e o tamanho do renderizador
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-// alvos
-let targets=[]
-let score=0
+        function animate() {
+            requestAnimationFrame(animate);
 
-function spawnTarget(){
+            // Atualiza o raycaster com a posição do mouse
+            raycaster.update(camera.position, mouse);
 
-let g=new THREE.BoxGeometry()
-let m=new THREE.MeshBasicMaterial({color:0xff0000})
-let cube=new THREE.Mesh(g,m)
+            // Verificar se o raycast atingiu o alvo
+            intersects = raycaster.intersectObject(target);
+            if (intersects.length > 0) {
+                target.material.color.set(0x00ff00);  // Muda a cor para verde quando o alvo é atingido
+            } else {
+                target.material.color.set(0xff0000);  // Caso contrário, mantém a cor vermelha
+            }
 
-cube.position.x=(Math.random()-0.5)*20
-cube.position.y=1+Math.random()*3
-cube.position.z=(Math.random()-0.5)*20
+            // Movimenta o alvo de forma simples ao longo do eixo X
+            target.position.x = Math.sin(Date.now() * 0.001) * 5;
 
-scene.add(cube)
-targets.push(cube)
+            // Renderizar a cena
+            renderer.render(scene, camera);
+        }
 
-}
-
-for(let i=0;i<10;i++) spawnTarget()
-
-
-// controle mouse
-let yaw=0
-let pitch=0
-
-document.body.addEventListener("click",()=>{
-document.body.requestPointerLock()
-})
-
-document.addEventListener("mousemove",(e)=>{
-
-if(document.pointerLockElement===document.body){
-
-yaw -= e.movementX*0.002
-pitch -= e.movementY*0.002
-
-pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch))
-
-camera.rotation.set(pitch,yaw,0)
-
-}
-
-})
-
-
-// tiro
-let raycaster=new THREE.Raycaster()
-
-document.addEventListener("mousedown",()=>{
-
-raycaster.setFromCamera({x:0,y:0},camera)
-
-let hits=raycaster.intersectObjects(targets)
-
-if(hits.length>0){
-
-let hit=hits[0].object
-scene.remove(hit)
-
-targets.splice(targets.indexOf(hit),1)
-
-score++
-document.getElementById("score").innerText="Score: "+score
-
-spawnTarget()
-
-}
-
-})
-
-
-// movimento
-let forward=false
-let back=false
-let left=false
-let right=false
-
-document.addEventListener("keydown",(e)=>{
-
-if(e.code==="KeyW") forward=true
-if(e.code==="KeyS") back=true
-if(e.code==="KeyA") left=true
-if(e.code==="KeyD") right=true
-
-})
-
-document.addEventListener("keyup",(e)=>{
-
-if(e.code==="KeyW") forward=false
-if(e.code==="KeyS") back=false
-if(e.code==="KeyA") left=false
-if(e.code==="KeyD") right=false
-
-})
-
-
-function animate(){
-
-requestAnimationFrame(animate)
-
-let speed=0.1
-
-if(forward) camera.translateZ(-speed)
-if(back) camera.translateZ(speed)
-if(left) camera.translateX(-speed)
-if(right) camera.translateX(speed)
-
-renderer.render(scene,camera)
-
-}
-
-animate()
-
-</script>
+        // Iniciar o jogo
+        init();
+    </script>
 </body>
 </html>
